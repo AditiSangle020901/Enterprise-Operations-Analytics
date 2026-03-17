@@ -1,7 +1,5 @@
 # 📊 Enterprise Operations Analytics Dashboard
 ![Dashboard Preview](dashboard_preview.png)
 
-
-# Enterprise-Operations-Analytics
 End-to-end data engineering and analytics pipeline. Features a Python ETL process, SQL-based Star Schema modeling, and a Power BI executive dashboard for global sales and operations tracking.
 Validated a Linear Regression model in Python, forecasting a next-month sales target of $407.4k based on historical seasonality and regional trends.
