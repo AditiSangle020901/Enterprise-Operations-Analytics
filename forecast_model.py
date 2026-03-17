@@ -1,28 +1,48 @@
 import pandas as pd
-import numpy as np
-from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import warnings
 
-# 1. Load data
-df = pd.read_csv("fact_sales.csv")
+# Suppress minor technical warnings for a cleaner output
+warnings.filterwarnings("ignore", category=UserWarning)
+
+# 1. Load the cleaned data
+df = pd.read_csv('fact_sales.csv')
 df['Order Date'] = pd.to_datetime(df['Order Date'])
 
-# 2. Prepare data: Total Sales per Month
-df['Month_Year'] = df['Order Date'].dt.to_period('M')
-monthly_sales = df.groupby('Month_Year')['Sales'].sum().reset_index()
+# 2. Prepare data for Time Series (Monthly Sales - using 'ME' for Month End)
+df_monthly = df.set_index('Order Date').resample('ME')['Sales'].sum().reset_index()
+df_monthly['Month_Index'] = np.arange(len(df_monthly))
 
-# Convert time to a number (1, 2, 3...) so the math works
-monthly_sales['Month_Count'] = np.arange(len(monthly_sales))
-
-# 3. Build the Model
-X = monthly_sales[['Month_Count']] # Input: The month number
-y = monthly_sales['Sales']       # Output: The sales $
-
+# 3. Train the Linear Regression Model
+# We use .values to avoid the "feature names" warning
+X = df_monthly[['Month_Index']].values
+y = df_monthly['Sales'].values
 model = LinearRegression()
 model.fit(X, y)
 
-# 4. Predict next month (the next number in the sequence)
-next_month = np.array([[len(monthly_sales)]])
-prediction = model.predict(next_month)
+# 4. Predict for the Next Month
+next_month_index = np.array([[len(df_monthly)]])
+prediction = model.predict(next_month_index)[0]
 
-print(f"🔮 FORECAST: Predicted Sales for next month: ${prediction[0]:,.2f}")
+# 5. Professional Visualization
+plt.figure(figsize=(10, 6))
+plt.plot(df_monthly['Order Date'], df_monthly['Sales'], marker='o', label='Historical Monthly Sales', color='#2c3e50')
+plt.axhline(y=df_monthly['Sales'].mean(), color='gray', linestyle='--', label='Average Sales')
+
+# Plot the Prediction point
+future_date = df_monthly['Order Date'].iloc[-1] + pd.DateOffset(months=1)
+plt.scatter(future_date, prediction, color='red', s=100, label=f'Predicted: ${prediction:,.2f}', zorder=5)
+
+# Formatting
+plt.title('Enterprise Sales Forecast: Historical vs. Predicted', fontsize=14)
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Total Sales ($)', fontsize=12)
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+print(f"🔮 FORECAST: Predicted Sales for next month: ${prediction:,.2f}")
+
+# This will open the graph window
+plt.show()
